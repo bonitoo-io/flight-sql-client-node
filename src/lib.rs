@@ -81,11 +81,23 @@ impl FlightSqlClient {
 pub async fn create_flight_sql_client(
     options: ClientOptions,
 ) -> Result<FlightSqlClient, napi::Error> {
-    Ok(FlightSqlClient {
-        client: Mutex::new(setup_client(options).await.context(ArrowSnafu {
-            message: "failed setting up flight sql client",
-        })?),
-    })
+    println!("Custom version err");
+    let setup_result = setup_client(options).await;
+    match setup_result {
+        Ok(client) => {
+            return Ok(FlightSqlClient {
+                client: Mutex::new(client),
+            });
+        }
+        Err(e) => {
+            return Err(napi::Error::from_reason(e.to_string()));
+        }
+    }
+    // Ok(FlightSqlClient {
+    //     client: Mutex::new(setup_client(options).await.context(ArrowSnafu {
+    //         message: "failed setting up flight sql client",
+    //     })?),
+    // })
 }
 
 #[napi]

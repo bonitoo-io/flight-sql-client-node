@@ -115,7 +115,11 @@ pub(crate) async fn setup_client(
 
     let protocol = if args.tls { "https" } else { "http" };
 
-    let mut endpoint = Endpoint::new(format!("{}://{}:{}", protocol, args.host, port))
+    let url = format!("{}://{}:{}", protocol, args.host, port);
+    //let url = format!("{}://{}", protocol, args.host);
+    println!("lib: Connecting to {}", url);
+
+    let mut endpoint = Endpoint::new(url)
         .map_err(|err| ArrowError::ExternalError(Box::new(err)))?
         .connect_timeout(Duration::from_secs(20))
         .timeout(Duration::from_secs(20))
@@ -125,20 +129,26 @@ pub(crate) async fn setup_client(
         .keep_alive_timeout(Duration::from_secs(20))
         .keep_alive_while_idle(true);
 
-    if args.tls {
-        let tls_config = ClientTlsConfig::new();
-        endpoint = endpoint
-            .tls_config(tls_config)
-            .map_err(|err| ArrowError::ExternalError(Box::new(err)))?;
-    }
+    // if args.tls {
+    //     let tls_config = ClientTlsConfig::new();
+    //     endpoint = endpoint
+    //         .tls_config(tls_config)
+    //         .map_err(|err| ArrowError::ExternalError(Box::new(err)))?;
+    // }
 
-    let channel = endpoint
-        .connect()
-        .await
-        .map_err(|err| ArrowError::ExternalError(Box::new(err)))?;
+    println!("lib: Connecting to endpoint");
+    let channel_res = endpoint.connect().await;
+
+    let channel = match channel_res {
+        Ok(channel) => channel,
+        Err(err) => {
+            println!("lib: Error connecting to endpoint: {:?}", err);
+            return Err(ArrowError::ExternalError(Box::new(err)));
+        }
+    };
 
     let mut client = FlightSqlServiceClient::new(channel);
-    info!("connected");
+    println!("lib: connected");
 
     for kv in args.headers {
         client.set_header(kv.key, kv.value);
@@ -146,7 +156,7 @@ pub(crate) async fn setup_client(
 
     if let Some(token) = args.token {
         client.set_token(token);
-        info!("token set");
+        println!("token set");
     }
 
     match (args.username, args.password) {

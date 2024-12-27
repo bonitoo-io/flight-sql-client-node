@@ -28,8 +28,8 @@ export interface ClientOptions {
   /** Server port. */
   port?: number;
 }
-export function createFlightSqlClient(options: ClientOptions): Promise<FlightSqlClient>;
-export function rustCrateVersion(): string;
+export declare function createFlightSqlClient(options: ClientOptions): Promise<FlightSqlClient>;
+export declare function rustCrateVersion(): string;
 export interface GetDbSchemasOptions {
   /**
    * Specifies the Catalog to search for the tables.
